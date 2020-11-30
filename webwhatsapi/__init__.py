@@ -34,6 +34,8 @@ from .objects.message import MessageGroup, factory_message
 from .objects.number_status import NumberStatus
 from .wapi_js_wrapper import WapiJsWrapper
 
+from webdriver_manager.chrome import ChromeDriverManager
+
 __version__ = "2.0.3"
 
 
@@ -258,7 +260,7 @@ class WhatsAPIDriver(object):
                 for option in chrome_options:
                     self._profile.add_argument(option)
             self.logger.info("Starting webdriver")
-            self.driver = webdriver.Chrome(chrome_options=self._profile, **extra_params)
+            self.driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=self._profile, **extra_params)
 
         elif client == "remote":
             if self._profile_path is not None:
