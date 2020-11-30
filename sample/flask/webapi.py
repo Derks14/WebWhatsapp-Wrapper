@@ -43,7 +43,7 @@ from flask import Flask, send_file, request, abort, g, jsonify
 from flask.json import JSONEncoder
 from functools import wraps
 from logging.handlers import TimedRotatingFileHandler
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import WebDriverException, NoSuchElementException
 from werkzeug.utils import secure_filename
 from webwhatsapi import MessageGroup, WhatsAPIDriver, WhatsAPIDriverStatus
 from webwhatsapi.objects.whatsapp_object import WhatsappObject
@@ -279,6 +279,7 @@ def check_new_messages(client_id):
         return
 
     try:
+        body = {}
         # Get all unread messages
         res = drivers[client_id].get_unread()
         # Mark all of them as seen
@@ -289,11 +290,47 @@ def check_new_messages(client_id):
         # If we have new messages, do something with it
         if res:
             print(res)
-    except:
+            for message_group in res:
+                if not message_group.chat._js_obj["isGroup"]:
+                    forwarder = threading.Thread(target=send_message_to_client, args=(message_group,client_id))
+                    forwarder.start()
+    except Exception as e:
+        print(str(e))
         pass
     finally:
         # Release lock anyway, safekeeping
         release_semaphore(client_id)
+
+
+def send_message_to_client(message_group, appId):
+    logging.info("Sending message to r2mp")
+    # recipient_msisdn = message_group.chat.get_js_obj()['messages'][0]['to']['user']
+    for message in message_group.messages:
+        if message.type == "chat" or message.type == "location":
+            body = {}
+            # body['recipientMsisdn'] = recipient_msisdn
+            body["recipientMsisdn"] = message._js_obj["to"].replace("@c.us", "")
+            body["content"] = message.content if message.type == "chat" else "https://www.latlong.net/c/?lat="+str(message.latitude)+"&long="+str(message.longitude)
+            if message.type == "location":
+                location_url = "https://www.latlong.net/c/?lat="+str(message.latitude)+"&long="+str(message.longitude)
+                body["content"] = '<a href="'+location_url+'" target="_blank"> Click to view location </a>'
+            body['content'] = message.content
+            body["type"] = "text"
+            body["timeSent"] = message.timestamp.isoformat()
+            body["senderMsisdn"] = message.chat_id.replace("@c.us", "")
+            body["messageId"] = message.id
+            body["companyId"] = appId
+            body["appId"] = appId
+            forward_message_to_r2mp(body)
+
+
+def forward_message_to_r2mp(message_data):
+    headers = {'Content-Type': 'application/json; charset=utf-8', 'x-r2-wp-screen-name': message_data["companyId"],
+               'msisdn': message_data["recipientMsisdn"]}
+    # response = requests.post("https://r2mp.rancard.com/api/v1/bot?channelType=WHATSAPP",
+    response = requests.post("http://localhost:8080/api/v1/bot?channelType=WHATSAPP",
+                  headers=headers,
+                  json=message_data)
 
 
 def get_client_info(client_id):
@@ -543,6 +580,24 @@ def get_qr():
     """Get qr as a json string"""
     qr = g.driver.get_qr_plain()
     return jsonify({"qr": qr})
+
+
+@app.route("/screen/qr/base64", methods=["GET"])
+def get_qr_base64():
+    """ Get qr as base64 string"""
+    try:
+        qr = g.driver.get_qr_base64()
+        return jsonify({
+            "success": True,
+            "isLoggedIn": False,
+            "qr": qr
+        })
+    except NoSuchElementException:
+        return jsonify({
+            "success": True,
+            "isLoggedIn": True,
+            "qr": None
+        })
 
 
 @app.route("/messages/unread", methods=["GET"])
