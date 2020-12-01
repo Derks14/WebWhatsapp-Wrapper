@@ -126,6 +126,10 @@ timers = dict()
 # Store list of semaphores
 semaphores = dict()
 
+SANDBOX_URL = "http://r2mp-sandbox.rancardmobility.com"
+PRODUCTION_URL = "http://r2mp.rancard.com"
+LOCAL = "http://localhost:8080"
+
 # API key needed for auth with this API, change as per usage
 API_KEY = "5ohsRCA8os7xW7arVagm3O861lMZwFfl"
 # File type allowed to be sent or received
@@ -149,7 +153,6 @@ CHROME_IS_HEADLESS = True
 CHROME_CACHE_PATH = BASE_DIR + "/sample/flask/chrome_cache/"
 CHROME_DISABLE_GPU = True
 CHROME_WINDOW_SIZE = "910,512"
-
 
 """
 ##############################
@@ -267,9 +270,9 @@ def check_new_messages(client_id):
     # Return if driver is not defined or if whatsapp is not logged in.
     # Stop the timer as well
     if (
-        client_id not in drivers
-        or not drivers[client_id]
-        or not drivers[client_id].is_logged_in()
+            client_id not in drivers
+            or not drivers[client_id]
+            or not drivers[client_id].is_logged_in()
     ):
         timers[client_id].stop()
         return
@@ -292,7 +295,7 @@ def check_new_messages(client_id):
             print(res)
             for message_group in res:
                 if not message_group.chat._js_obj["isGroup"]:
-                    forwarder = threading.Thread(target=send_message_to_client, args=(message_group,client_id))
+                    forwarder = threading.Thread(target=send_message_to_client, args=(message_group, client_id))
                     forwarder.start()
     except Exception as e:
         print(str(e))
@@ -310,10 +313,12 @@ def send_message_to_client(message_group, appId):
             body = {}
             # body['recipientMsisdn'] = recipient_msisdn
             body["recipientMsisdn"] = message._js_obj["to"].replace("@c.us", "")
-            body["content"] = message.content if message.type == "chat" else "https://www.latlong.net/c/?lat="+str(message.latitude)+"&long="+str(message.longitude)
+            body["content"] = message.content if message.type == "chat" else "https://www.latlong.net/c/?lat=" + str(
+                message.latitude) + "&long=" + str(message.longitude)
             if message.type == "location":
-                location_url = "https://www.latlong.net/c/?lat="+str(message.latitude)+"&long="+str(message.longitude)
-                body["content"] = '<a href="'+location_url+'" target="_blank"> Click to view location </a>'
+                location_url = "https://www.latlong.net/c/?lat=" + str(message.latitude) + "&long=" + str(
+                    message.longitude)
+                body["content"] = '<a href="' + location_url + '" target="_blank"> Click to view location </a>'
             body['content'] = message.content
             body["type"] = "text"
             body["timeSent"] = message.timestamp.isoformat()
@@ -327,10 +332,10 @@ def send_message_to_client(message_group, appId):
 def forward_message_to_r2mp(message_data):
     headers = {'Content-Type': 'application/json; charset=utf-8', 'x-r2-wp-screen-name': message_data["companyId"],
                'msisdn': message_data["recipientMsisdn"]}
-    # response = requests.post("https://r2mp.rancard.com/api/v1/bot?channelType=WHATSAPP",
-    response = requests.post("http://localhost:8080/api/v1/bot?channelType=WHATSAPP",
-                  headers=headers,
-                  json=message_data)
+    response = requests.post( SANDBOX_URL +"/api/v1/bot?channelType=WHATSAPP",
+                             # response = requests.post("http://localhost:8080/api/v1/bot?channelType=WHATSAPP",
+                             headers=headers,
+                             json=message_data)
 
 
 def get_client_info(client_id):
@@ -351,8 +356,8 @@ def get_client_info(client_id):
     is_alive = False
     is_logged_in = False
     if (
-        driver_status == WhatsAPIDriverStatus.NotLoggedIn
-        or driver_status == WhatsAPIDriverStatus.LoggedIn
+            driver_status == WhatsAPIDriverStatus.NotLoggedIn
+            or driver_status == WhatsAPIDriverStatus.LoggedIn
     ):
         is_alive = True
     if driver_status == WhatsAPIDriverStatus.LoggedIn:
@@ -489,8 +494,8 @@ def before_request():
 
         # If driver status is unkown, means driver has closed somehow, reopen it
         if (
-            g.driver_status != WhatsAPIDriverStatus.NotLoggedIn
-            and g.driver_status != WhatsAPIDriverStatus.LoggedIn
+                g.driver_status != WhatsAPIDriverStatus.NotLoggedIn
+                and g.driver_status != WhatsAPIDriverStatus.LoggedIn
         ):
             drivers[g.client_id] = init_client(g.client_id)
             g.driver_status = g.driver.get_status()
@@ -520,8 +525,8 @@ def on_bad_internal_server_error(e):
             {
                 "success": False,
                 "message": "For some reason, browser for client "
-                + g.client_id
-                + " has closed. Please, try get QrCode again",
+                           + g.client_id
+                           + " has closed. Please, try get QrCode again",
             }
         )
     else:
@@ -533,6 +538,7 @@ def on_bad_internal_server_error(e):
 ##### API ROUTES ####
 #####################
 """
+
 
 # ---------------------------- Client -----------------------------------------
 
