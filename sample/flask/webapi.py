@@ -328,7 +328,8 @@ def forward_message_to_r2mp(message_data):
     headers = {'Content-Type': 'application/json; charset=utf-8', 'x-r2-wp-screen-name': message_data["companyId"],
                'msisdn': message_data["recipientMsisdn"]}
     # response = requests.post("https://r2mp.rancard.com/api/v1/bot?channelType=WHATSAPP",
-    response = requests.post("http://localhost:8080/api/v1/bot?channelType=WHATSAPP",
+    # response = requests.post("http://localhost:8080/api/v1/bot?channelType=WHATSAPP",
+    response = requests.post("http://r2mp-sandbox.rancardmobility.com/api/v1/bot?channelType=WHATSAPP",
                   headers=headers,
                   json=message_data)
 
