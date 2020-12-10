@@ -406,7 +406,7 @@ def get_client_info(client_id):
     return {
         "is_alive": is_alive,
         "is_logged_in": is_logged_in,
-        "is_timer": bool(timers[client_id]) and timers[client_id].is_running,
+        # "is_timer": bool(timers[client_id]) and timers[client_id].is_running,
     }
 
 
