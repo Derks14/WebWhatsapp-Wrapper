@@ -126,6 +126,10 @@ timers = dict()
 # Store list of semaphores
 semaphores = dict()
 
+SANDBOX_URL = "http://r2mp-sandbox.rancardmobility.com"
+PRODUCTION_URL = "http://r2mp.rancard.com"
+LOCAL = "http://localhost:8080"
+
 # API key needed for auth with this API, change as per usage
 API_KEY = "5ohsRCA8os7xW7arVagm3O861lMZwFfl"
 # File type allowed to be sent or received

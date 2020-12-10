@@ -248,12 +248,16 @@ class WhatsAPIDriver(object):
 
         elif self.client == "chrome":
             self._profile = webdriver.ChromeOptions()
+            self._profile.add_argument("--no-sandbox")
+            self._profile.add_argument("--headless")
+            self._profile.add_argument("--disable-dev-shm-usage")
+            self._profile.add_argument("--disable-infobars")
+            # self._profile("")
+
             if self._profile_path is not None:
                 self._profile.add_argument("user-data-dir=%s" % self._profile_path)
             if proxy is not None:
                 self._profile.add_argument("--proxy-server=%s" % proxy)
-            if headless:
-                self._profile.add_argument("headless")
             if chrome_options is not None:
                 for option in chrome_options:
                     self._profile.add_argument(option)
