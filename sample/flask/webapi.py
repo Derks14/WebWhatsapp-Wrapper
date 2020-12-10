@@ -111,20 +111,21 @@ class NewMessageObserver:
 
     def on_message_received(self, new_messages):
         for message in new_messages:
-            if message.type == "chat" or message.type == "location":
-                body = reformat_message_r2mp(message, self.appId)
-                forward_message_to_r2mp(body)
-                print(
-                    "New {} message '{}' received from number {}".format(self.appId,
-                        message.content, message.sender.id
+            if message.chat_id.endswith("@c.us"):
+                if message.type == "chat" or message.type == "location":
+                    body = reformat_message_r2mp(message, self.appId)
+                    forward_message_to_r2mp(body)
+                    print(
+                        "New {} message '{}' received from number {}".format(self.appId,
+                            message.content, message.sender.id
+                        )
                     )
-                )
-            else:
-                print(
-                    "New message of type '{}' received from number {}".format(
-                        message.type, message.sender.id
+                else:
+                    print(
+                        "New message of type '{}' received from number {}".format(
+                            message.type, message.sender.id
+                        )
                     )
-                )
 
 
 """
