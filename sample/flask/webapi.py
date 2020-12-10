@@ -105,6 +105,28 @@ class WhatsAPIJSONEncoder(JSONEncoder):
         return super(WhatsAPIJSONEncoder, self).default(obj)
 
 
+class NewMessageObserver:
+    def __init__(self, appId):
+        self.appId = appId
+
+    def on_message_received(self, new_messages):
+        for message in new_messages:
+            if message.type == "chat" or message.type == "location":
+                body = reformat_message_r2mp(message, self.appId)
+                forward_message_to_r2mp(body)
+                print(
+                    "New {} message '{}' received from number {}".format(self.appId,
+                        message.content, message.sender.id
+                    )
+                )
+            else:
+                print(
+                    "New message of type '{}' received from number {}".format(
+                        message.type, message.sender.id
+                    )
+                )
+
+
 """
 ###########################
 ##### GLOBAL VARIABLES ####
@@ -306,6 +328,24 @@ def check_new_messages(client_id):
         release_semaphore(client_id)
 
 
+def reformat_message_r2mp(message, appId):
+    body = {"recipientMsisdn": message._js_obj["to"].replace("@c.us", ""),
+            "content": message.content if message.type == "chat" else "https://www.latlong.net/c/?lat=" + str(
+                message.latitude) + "&long=" + str(message.longitude)}
+    # body['recipientMsisdn'] = recipient_msisdn
+    if message.type == "location":
+        location_url = "https://www.latlong.net/c/?lat=" + str(message.latitude) + "&long=" + str(message.longitude)
+        body["content"] = '<a href="' + location_url + '" target="_blank"> Click to view location </a>'
+    body['content'] = message.content
+    body["type"] = "text"
+    body["timeSent"] = message.timestamp.isoformat()
+    body["senderMsisdn"] = message.chat_id.replace("@c.us", "")
+    body["messageId"] = message.id
+    body["companyId"] = appId
+    body["appId"] = appId
+    return body
+
+
 def send_message_to_client(message_group, appId):
     logging.info("Sending message to r2mp")
     # recipient_msisdn = message_group.chat.get_js_obj()['messages'][0]['to']['user']
@@ -500,7 +540,8 @@ def before_request():
             drivers[g.client_id] = init_client(g.client_id)
             g.driver_status = g.driver.get_status()
 
-        init_timer(g.client_id)
+        # init_timer(g.client_id)
+        g.driver.subscribe_new_messages(NewMessageObserver(g.client_id))
 
 
 @app.after_request
